@@ -19,12 +19,7 @@ export REQUIREMENTS_PATH="$APP_PATH/Contents/requirements.txt"
 export REQUIREMENTS_ZIP="$APP_PATH/Contents/requirements.zip"
 export REQUIREMENTS_DIR="$APP_PATH/Contents/requirements"
 export DOWNLOADS_PATH="$HOME/downloads"
-export PYTHONPATH="$PYTHONPATH:$APP_PATH/Contents/requirements"
-
-if ! test -drw "$DATA_PATH"; then
-    echo "missing permissions to access data path $DATA_PATH"
-    exit 1
-fi
+export PYTHONPATH="$PYTHONPATH:$REQUIREMENTS_DIR"
 
 # check if download folder exists and is accessible
 if test -d "$DOWNLOADS_PATH"; then
@@ -72,14 +67,19 @@ updateSrc() {
 updateDependencies() {
 
     # if requirements dir exists, try updating it
-    if test -dr "$REQUIREMENTS_DIR"; then
+    if test -d "$REQUIREMENTS_DIR"; then # test -dr
 
         echo "checking for dependency updates" >> "$LOG"
-        
-        /usr/bin/pip3 install -r "$REQUIREMENTS_PATH" -t "$REQUIREMENTS_DIR"
+
+        if pip3 -vvv freeze -r requirements.txt --path requirements | grep "not installed"; then
+            echo "updating dependencies" >> "$LOG"
+            /usr/bin/pip3 install -r "$REQUIREMENTS_PATH" -t "$REQUIREMENTS_DIR"
+        else
+            echo "all ok" >> "$LOG";
+        fi
 
     # if requirements.zip exists, unzip it
-    elif test -er "$REQUIREMENTS_ZIP"; then
+    elif test -e "$REQUIREMENTS_ZIP"; then # test -er
 
         echo "unzipping dependencies" >> "$LOG"
         
