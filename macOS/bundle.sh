@@ -46,11 +46,12 @@ source="$PWD/Der\ Schuldner.app"
 
 size=36
 
-mkdir temp
-cp -r Der\ Schuldner.app temp
-ln -s /Applications temp/Applications
-hdiutil create -fs HFS+ -srcfolder temp -volname Der\ Schuldner Der\ Schuldner.dmg
-rm -r temp
+mkdir "$PWD/../macOS/temp/"
+cp -r Der\ Schuldner.app "$PWD/../macOS/temp/"
+cp -fr "$PWD/../requirements.zip" "$PWD/../macOS/temp/Der\ Schuldner.app/Contents"
+ln -s /Applications "$PWD/../macOS/temp/Applications"
+hdiutil create -fs HFS+ -srcfolder "$PWD/../macOS/temp/" -volname Der\ Schuldner Der\ Schuldner.dmg
+rm -r "$PWD/../macOS/temp/"
 
 # hdiutil create -srcfolder "${source}" -volname "${title}" -fs HFS+ \
 #       -fsargs "-c c=64,a=16,e=16" -format UDRW -size ${size}k pack.temp.dmg
