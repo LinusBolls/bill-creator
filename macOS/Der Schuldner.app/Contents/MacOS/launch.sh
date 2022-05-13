@@ -7,19 +7,21 @@ ARCHITECTURE=$(sysctl -n machdep.cpu.brand_string)
 LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
 APP_PATH="$LAUNCH_PATH/../.."
 
-ENTRY="$APP_PATH/Contents/src/index.py"
-LOG="$APP_PATH/logs/logs.txt"
+ENTRY_PY="$APP_PATH/Contents/src/index.py"
+WINDOW_PY="$APP_PATH/Contents/src/updatingWindow.py"
+LOG="$APP_PATH/logs/log.txt"
 ERR="$APP_PATH/logs/err.txt"
 
 TIMESTAMP=$(date +'%m/%d/%Y - %H:%M:%S')
 HEADER="===== $TIMESTAMP ====="
 
+export REQ_TXT="$APP_PATH/Contents/requirements.txt"
+export REQ_ZIP="$APP_PATH/Contents/requirements.zip"
+export REQ_PATH="$APP_PATH/Contents/requirements"
+export PYTHONPATH="$PYTHONPATH:$REQ_PATH"
+
 export DATA_PATH="$HOME/Library/Application Support/Der Schuldner"
-export REQUIREMENTS_PATH="$APP_PATH/Contents/requirements.txt"
-export REQUIREMENTS_ZIP="$APP_PATH/Contents/requirements.zip"
-export REQUIREMENTS_DIR="$APP_PATH/Contents/requirements"
 export DOWNLOADS_PATH="$HOME/downloads"
-export PYTHONPATH="$PYTHONPATH:$REQUIREMENTS_DIR"
 
 # check if download folder exists and is accessible
 if test -d "$DOWNLOADS_PATH"; then
@@ -44,7 +46,7 @@ makeUpdatingWindow() {
 
     rm "$INFO"
     mkfifo "$INFO"
-    tail -f "$INFO" | /usr/bin/python3 "$APP_PATH/Contents/src/updatingWindow.py" & infoPid=$!
+    tail -f "$INFO" | /usr/bin/python3 "$WINDOW_PY" & infoPid=$!
 }
 updateSrc() {
     # download and unpack update
@@ -67,46 +69,52 @@ updateSrc() {
 updateDependencies() {
 
     # if requirements dir exists, try updating it
-    if test -d "$REQUIREMENTS_DIR"; then # test -dr
+    if test -d "$REQ_PATH"; then # test -dr
 
         echo "checking for dependency updates" >> "$LOG"
 
-        if pip3 -vvv freeze -r requirements.txt --path requirements | grep "not installed"; then
+        if pip3 -vvv freeze -r "$REQ_TXT" --path "$REQ_PATH" | grep "not installed"; then
             echo "updating dependencies" >> "$LOG"
-            /usr/bin/pip3 install -r "$REQUIREMENTS_PATH" -t "$REQUIREMENTS_DIR"
+            /usr/bin/pip3 install -r "$REQ_TXT" -t "$REQ_PATH"
         else
             echo "all ok" >> "$LOG";
         fi
 
     # if requirements.zip exists, unzip it
-    elif test -e "$REQUIREMENTS_ZIP"; then # test -er
+    elif test -f "$REQ_ZIP"; then # test -er
 
         echo "unzipping dependencies" >> "$LOG"
         
-        unzip "$REQUIREMENTS_ZIP" -d "$REQUIREMENTS_DIR"
+        unzip "$REQ_ZIP" -d "$REQ_PATH"
 
-        rm "$REQUIREMENTS_ZIP"
+        rm "$REQ_ZIP"
 
     # else fatal
     else
-        echo "could not find $REQUIREMENTS_DIR nor $REQUIREMENTS_ZIP" >> "$ERR"
+        echo "could not find $REQ_PATH nor $REQ_ZIP" >> "$ERR"
         exit 1
     fi
 }
 launch() {
 
+    echo "test" >> "$LOG"
+
     echo "Launching..." > "$INFO"
 
     sleep 1
 
+    echo "test2" >> "$LOG"
+
     kill -9 "$infoPid"
+
+    echo "test3" >> "$LOG"
 
     if [[ $ARCHITECTURE == "Apple M1" ]]; then
         echo "running on $ARCHITECTURE, switching to arm64" >> "$LOG"
-        $env /usr/bin/arch -arm64  /usr/bin/python3 "$ENTRY" >> "$LOG" 2>> "$ERR"
+        $env /usr/bin/arch -arm64  /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>> "$ERR"
     else
         echo "running on $ARCHITECTURE" >> "$LOG"
-        /usr/bin/python3 "$ENTRY" >> "$LOG" 2>> "$ERR"
+        /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>> "$ERR"
     fi
 }
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
