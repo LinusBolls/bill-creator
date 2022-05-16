@@ -1,16 +1,20 @@
 #!/bin/sh
 
-
 # https://stackoverflow.com/questions/96882/how-do-i-create-a-nice-looking-dmg-for-mac-os-x-using-command-line-tools
 # https://github.com/create-dmg/create-dmg
 
-rm Der\ Schuldner.dmg
+LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
+APP_PATH="$LAUNCH_PATH/.."
+
+DMG_FILE="$LAUNCH_PATH/Der Schuldner.dmg"
+
+rm "$DMG_FILE" 2>/dev/null
 
 toIconSet() {
 
-  FOLDER="$PWD/appIcon"
-  SVG_FILE="$PWD/../assets/appIcon.svg"
-  PNG_FILE="$PWD/appIcon.png"
+  FOLDER="$LAUCNH_PATH/appIcon"
+  SVG_FILE="$APP_PATH/assets/appIcon.svg"
+  PNG_FILE="$LAUNCH_PATH/appIcon.png"
 
   # qlmanage -t -s 1024 -o . "$SVG_FILE"
 
@@ -39,19 +43,19 @@ toIconSet() {
 }
 toIconSet
 
-BACKGROUND_IMG_PATH="$PWD/../assets/dmgBackground.png"
+BACKGROUND_IMG_PATH="$APP_PATH/assets/dmgBackground.png"
 applicationName=Der\ Schuldner.app
-title=among
-source="$PWD/Der\ Schuldner.app"
+title="Installiere den Schuldner"
+source="$LAUNCH_PATH/Der Schuldner.app"
 
 size=36
 
-mkdir "$PWD/../macOS/temp/"
-cp -r Der\ Schuldner.app "$PWD/../macOS/temp/"
-cp -fr "$PWD/../requirements.zip" "$PWD/../macOS/temp/Der\ Schuldner.app/Contents"
-ln -s /Applications "$PWD/../macOS/temp/Applications"
-hdiutil create -fs HFS+ -srcfolder "$PWD/../macOS/temp/" -volname Der\ Schuldner Der\ Schuldner.dmg
-rm -r "$PWD/../macOS/temp/"
+mkdir "$LAUNCH_PATH/temp/"
+cp -r "$LAUNCH_PATH/Der Schuldner.app" "$LAUNCH_PATH/temp/"
+cp -fr "$APP_PATH/requirements.zip" "$LAUNCH_PATH/temp/Der Schuldner.app/Contents"
+ln -s /Applications "$LAUNCH_PATH/temp/Applications"
+hdiutil create -fs HFS+ -srcfolder "$LAUNCH_PATH/temp/" -volname "$title" "$DMG_FILE"
+rm -r "$LAUNCH_PATH/temp/"
 
 # hdiutil create -srcfolder "${source}" -volname "${title}" -fs HFS+ \
 #       -fsargs "-c c=64,a=16,e=16" -format UDRW -size ${size}k pack.temp.dmg

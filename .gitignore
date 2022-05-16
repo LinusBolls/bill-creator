@@ -168,4 +168,5 @@ macOS/Der\ Schuldner.app/logs/*
 macOS/Der\ Schuldner.app/Contents/requirements
 macOS/Der\ Schuldner.app/Contents/requirements.txt
 macOS/Der\ Schuldner.app/Contents/requirements.zip
-macOS/Der\ Schuldner.app/Contents/src/**/*
+macOS/Der\ Schuldner.app/Contents/src
+macOS/Der\ Schuldner.app/Contents/currentCommitHash.txt

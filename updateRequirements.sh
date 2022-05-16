@@ -1,16 +1,23 @@
 #!/bin/sh
 
-DIR=`dirname $0`
-TXT="$DIR/requirements.txt"
-FOLDER="$DIR/requirements"
-ZIP="$DIR/requirements.zip"
+LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
 
-rm "$TXT"
-rm -r "$FOLDER"
-rm "$ZIP"
+TXT="$LAUNCH_PATH/requirements.txt"
+FOLDER="$LAUNCH_PATH/requirements"
+ZIP="$LAUNCH_PATH/requirements.zip"
 
-pip3 freeze > "$TXT"
+rm "$TXT" 2>/dev/null
+rm -r "$FOLDER" 2>/dev/null
+rm "$ZIP" 2>/dev/null
+
+/usr/bin/pip3 freeze > "$TXT"
+
 # remove last line which causes errors on install
 sed -i "" -e "$ d" "$TXT"
-pip3 install -r "$TXT" -t "$FOLDER"
-zip -r "$ZIP" "$FOLDER"
+# $env /usr/bin/arch -x86_64 /usr/bin/pip3 install -r "$TXT" -t "$FOLDER"
+/usr/bin/pip3 install -r "$TXT" -t "$FOLDER"
+
+# using an absolute path for the second zip arguments creates nested folders _inside_ the zip, 
+# so we are cding to avoid having to use it
+cd "$LAUNCH_PATH"
+zip -r "$ZIP" "requirements"

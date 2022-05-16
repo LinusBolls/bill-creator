@@ -1,12 +1,15 @@
 #!/bin/sh
 
+REPO_OWNER="linusbolls"
 REPO_NAME="bill-creator"
-REPO_URL="https://github.com/linusbolls/$REPO_NAME/archive/refs/heads/master.zip"
+REPO_ZIP_URL="https://github.com/$REPO_OWNER/$REPO_NAME/archive/refs/heads/master.zip"
+REPO_UPDATE_CHECK_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/commits/master"
 
 ARCHITECTURE=$(sysctl -n machdep.cpu.brand_string)
 LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
 APP_PATH="$LAUNCH_PATH/../.."
 
+HASH_FILE="$APP_PATH/Contents/currentCommitHash.txt"
 ENTRY_PY="$APP_PATH/Contents/src/index.py"
 WINDOW_PY="$APP_PATH/Contents/src/updatingWindow.py"
 LOG="$APP_PATH/logs/log.txt"
@@ -30,7 +33,9 @@ else
     export STARTUP_PATH="$HOME"
 fi
 
-mkdir "$DATA_PATH"
+isWithUpdateWindow=false
+
+mkdir "$DATA_PATH" 2>/dev/null
 
 echo $HEADER >> "$LOG"
 echo $HEADER >> "$ERR"
@@ -40,7 +45,7 @@ echo "startup folder is $STARTUP_PATH" >> "$LOG"
 
 INFO="/dev/null"
 
-makeUpdatingWindow() {
+launchUpdateWindow() {
 
     INFO="/tmp/srv-input"
 
@@ -48,23 +53,46 @@ makeUpdatingWindow() {
     mkfifo "$INFO"
     tail -f "$INFO" | /usr/bin/python3 "$WINDOW_PY" & infoPid=$!
 }
+killUpdateWindow() {
+    kill -9 "$infoPid"
+}
 updateSrc() {
     # download and unpack update
-    echo "Fetching Source..." > "$INFO"
 
-    curl -L "$REPO_URL" --output "$DATA_PATH/update.zip"
+    echo "fetching latest commit hash" >> "$LOG"
 
-    echo "Unpacking Source..." > "$INFO"
+    currentCommitHash=$(cat "$HASH_FILE") 2>/dev/null
 
-    unzip "$DATA_PATH/update.zip" -d "$DATA_PATH/update"
+    r=($(curl -s "$REPO_UPDATE_CHECK_URL" | /usr/bin/python3 -c "import sys, json; d = json.load(sys.stdin); print(d['sha'], d['commit']['message'])"))
+    latestCommitHash=${r[0]}
+    latestCommitMsg=${r[1]}
 
-    # replace relevant files of .app with files of update
-    cp -fr "$DATA_PATH/update/$REPO_NAME-master/src" "$APP_PATH/Contents"
-    cp -fr "$DATA_PATH/update/$REPO_NAME-master/requirements.txt" "$APP_PATH/Contents"
+    echo "current commit hash is $currentCommitHash, latest commit hash is $latestCommitHash" >> "$LOG"
+    echo "latest commit: '$latestCommitMsg'" >> "$LOG"
 
-    # cleanup
-    rm "$DATA_PATH/update.zip"
-    rm -rf "$DATA_PATH/update"
+    if [[ $? -eq 0 && currentCommitHash = latestCommitHash ]]; then
+        echo "up to date" >> "$LOG"
+    else
+        echo "not up to date" >> "$LOG"
+        
+        echo "Fetching Source..." > "$INFO"
+
+        curl -L "$REPO_ZIP_URL" --output "$DATA_PATH/update.zip"
+
+        echo "Unpacking Source..." > "$INFO"
+
+        unzip "$DATA_PATH/update.zip" -d "$DATA_PATH/update"
+
+        # replace relevant files of .app with files of update
+        cp -fr "$DATA_PATH/update/$REPO_NAME-master/src" "$APP_PATH/Contents"
+        cp -fr "$DATA_PATH/update/$REPO_NAME-master/requirements.txt" "$APP_PATH/Contents"
+
+        # cleanup
+        rm "$DATA_PATH/update.zip"
+        rm -rf "$DATA_PATH/update"
+
+        echo "$latestCommitHash" > "$HASH_FILE"
+    fi
 }
 updateDependencies() {
 
@@ -73,11 +101,11 @@ updateDependencies() {
 
         echo "checking for dependency updates" >> "$LOG"
 
-        if pip3 -vvv freeze -r "$REQ_TXT" --path "$REQ_PATH" | grep "not installed"; then
+        if /usr/bin/pip3 -vvv freeze -r "$REQ_TXT" --path "$REQ_PATH" | grep "not installed"; then
             echo "updating dependencies" >> "$LOG"
             /usr/bin/pip3 install -r "$REQ_TXT" -t "$REQ_PATH"
         else
-            echo "all ok" >> "$LOG";
+            echo "all up to date" >> "$LOG";
         fi
 
     # if requirements.zip exists, unzip it
@@ -85,45 +113,51 @@ updateDependencies() {
 
         echo "unzipping dependencies" >> "$LOG"
         
-        unzip "$REQ_ZIP" -d "$REQ_PATH"
+        unzip "$REQ_ZIP" -d "$APP_PATH/Contents"
 
         rm "$REQ_ZIP"
 
     # else fatal
     else
         echo "could not find $REQ_PATH nor $REQ_ZIP" >> "$ERR"
-        exit 1
+        exit 1        
     fi
 }
 launch() {
 
-    echo "test" >> "$LOG"
-
     echo "Launching..." > "$INFO"
 
-    sleep 1
-
-    echo "test2" >> "$LOG"
-
-    kill -9 "$infoPid"
-
-    echo "test3" >> "$LOG"
-
-    if [[ $ARCHITECTURE == "Apple M1" ]]; then
-        echo "running on $ARCHITECTURE, switching to arm64" >> "$LOG"
-        $env /usr/bin/arch -arm64  /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>> "$ERR"
-    else
-        echo "running on $ARCHITECTURE" >> "$LOG"
-        /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>> "$ERR"
+    if $isWithUpdateWindow; then
+        sleep 1
     fi
+
+    # if [[ $ARCHITECTURE = "Apple M1" ]]; then
+    #     echo "running on $ARCHITECTURE, switching to arm64" >> "$LOG"
+    #     $env /usr/bin/arch -arm64  /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
+    # else
+    #     echo "running on $ARCHITECTURE" >> "$LOG"
+    #     /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
+    # fi
+    $env /usr/bin/arch -x86_64 /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
 }
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
 
-# if wifi connection
-if [ $? -eq 0 ]; then
+hasWifi=[ $? -eq 0 ]
 
-    # makeUpdatingWindow
-    updateSrc
-    updateDependencies
+if $hasWifi; then
+
+    if $isWithUpdateWindow; then
+        launchUpdateWindow
+
+        updateSrc
+        updateDependencies
+    
+        killUpdateWindow
+    else
+        updateSrc
+        updateDependencies
+    fi
+else
+    echo "no wifi connection, skipping updates" >> "$LOG"
 fi
 launch
