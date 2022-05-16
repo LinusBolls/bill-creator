@@ -48,8 +48,6 @@ applicationName=Der\ Schuldner.app
 title="Installiere den Schuldner"
 source="$LAUNCH_PATH/Der Schuldner.app"
 
-size=36
-
 mkdir "$LAUNCH_PATH/temp/"
 cp -r "$LAUNCH_PATH/Der Schuldner.app" "$LAUNCH_PATH/temp/"
 cp -fr "$APP_PATH/requirements.zip" "$LAUNCH_PATH/temp/Der Schuldner.app/Contents"
@@ -57,10 +55,14 @@ ln -s /Applications "$LAUNCH_PATH/temp/Applications"
 hdiutil create -fs HFS+ -srcfolder "$LAUNCH_PATH/temp/" -volname "$title" "$DMG_FILE"
 rm -r "$LAUNCH_PATH/temp/"
 
-# hdiutil create -srcfolder "${source}" -volname "${title}" -fs HFS+ \
-#       -fsargs "-c c=64,a=16,e=16" -format UDRW -size ${size}k pack.temp.dmg
+sache="$LAUNCH_PATH/pack.temp.dmg"
 
-# device=$(hdiutil attach -readwrite -noverify -noautoopen "pack.temp.dmg" | \
+
+# ab hier wirds sus
+
+# hdiutil create -srcfolder "${source}" -volname "${title}" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size 500m "$sache"
+
+# device=$(hdiutil attach -readwrite -noverify -noautoopen "$sache" | \
 #          egrep '^/dev/' | sed 1q | awk '{print $1}')
 
 # echo '
@@ -89,8 +91,8 @@ rm -r "$LAUNCH_PATH/temp/"
 # sync
 # sync
 # hdiutil detach ${device}
-# hdiutil convert "/pack.temp.dmg" -format UDZO -imagekey zlib-level=9 -o "${finalDMGName}"
-# rm -f /pack.temp.dmg 
+# hdiutil convert "$sache" -format UDZO -imagekey zlib-level=9 -o "dings"
+# rm -f "$sache"
 
 
 # sips -Z 2000 background.png --out resizedBackground.png
