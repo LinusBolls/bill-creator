@@ -57,9 +57,7 @@ killUpdateWindow() {
     kill -9 "$infoPid"
 }
 updateSrc() {
-    # download and unpack update
-
-    echo "fetching latest commit hash" >> "$LOG"
+    echo "checking for source updates" >> "$LOG"
 
     currentCommitHash=$(cat "$HASH_FILE") 2>/dev/null
 
@@ -67,13 +65,10 @@ updateSrc() {
     latestCommitHash=${r[0]}
     latestCommitMsg=${r[1]}
 
-    echo "current commit hash is $currentCommitHash, latest commit hash is $latestCommitHash" >> "$LOG"
-    echo "latest commit: '$latestCommitMsg'" >> "$LOG"
-
-    if [[ $? -eq 0 && currentCommitHash = latestCommitHash ]]; then
-        echo "up to date" >> "$LOG"
+    if [ $currentCommitHash = $latestCommitHash ]; then
+        echo "source up to date" >> "$LOG"
     else
-        echo "not up to date" >> "$LOG"
+        echo "source not up to date, updating" >> "$LOG"
         
         echo "Fetching Source..." > "$INFO"
 
@@ -93,6 +88,8 @@ updateSrc() {
 
         echo "$latestCommitHash" > "$HASH_FILE"
     fi
+    echo "current commit hash is '$currentCommitHash', latest commit hash is '$latestCommitHash'" >> "$LOG"
+    echo "latest commit message: '$latestCommitMsg'" >> "$LOG"
 }
 updateDependencies() {
 
@@ -102,10 +99,10 @@ updateDependencies() {
         echo "checking for dependency updates" >> "$LOG"
 
         if /usr/bin/pip3 -vvv freeze -r "$REQ_TXT" --path "$REQ_PATH" | grep "not installed"; then
-            echo "updating dependencies" >> "$LOG"
+            echo "dependencies not up to date, updating" >> "$LOG"
             /usr/bin/pip3 install -r "$REQ_TXT" -t "$REQ_PATH"
         else
-            echo "all up to date" >> "$LOG";
+            echo "dependencies up to date" >> "$LOG";
         fi
 
     # if requirements.zip exists, unzip it
@@ -158,6 +155,6 @@ if $hasWifi; then
         updateDependencies
     fi
 else
-    echo "no wifi connection, skipping updates" >> "$LOG"
+    echo "no wifi connection, skipping update checks" >> "$LOG"
 fi
 launch
