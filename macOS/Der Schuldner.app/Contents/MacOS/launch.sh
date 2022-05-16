@@ -3,13 +3,13 @@
 REPO_OWNER="linusbolls"
 REPO_NAME="bill-creator"
 REPO_ZIP_URL="https://github.com/$REPO_OWNER/$REPO_NAME/archive/refs/heads/master.zip"
-REPO_UPDATE_CHECK_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/commits/master"
+REPO_LATEST_COMMIT_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/commits/master"
 
 ARCHITECTURE=$(sysctl -n machdep.cpu.brand_string)
 LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
 APP_PATH="$LAUNCH_PATH/../.."
 
-HASH_FILE="$APP_PATH/Contents/currentCommitHash.txt"
+CURRENT_COMMIT_JSON="$APP_PATH/Contents/currentCommit.json"
 ENTRY_PY="$APP_PATH/Contents/src/index.py"
 WINDOW_PY="$APP_PATH/Contents/src/updatingWindow.py"
 LOG="$APP_PATH/logs/log.txt"
@@ -59,11 +59,12 @@ killUpdateWindow() {
 updateSrc() {
     echo "checking for source updates" >> "$LOG"
 
-    currentCommitHash=$(cat "$HASH_FILE") 2>/dev/null
+    currentCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['sha'])")
 
-    r=($(curl -s "$REPO_UPDATE_CHECK_URL" | /usr/bin/python3 -c "import sys, json; d = json.load(sys.stdin); print(d['sha'], d['commit']['message'])"))
-    latestCommitHash=${r[0]}
-    latestCommitMsg=${r[1]}
+    curl "$REPO_LATEST_COMMIT_URL" -o "$CURRENT_COMMIT_JSON"
+
+    latestCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['sha'])")
+    latestCommitMsg=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['commit']['message'])")
 
     if [ $currentCommitHash = $latestCommitHash ]; then
         echo "source up to date" >> "$LOG"
@@ -85,8 +86,6 @@ updateSrc() {
         # cleanup
         rm "$DATA_PATH/update.zip"
         rm -rf "$DATA_PATH/update"
-
-        echo "$latestCommitHash" > "$HASH_FILE"
     fi
     echo "current commit hash is '$currentCommitHash', latest commit hash is '$latestCommitHash'" >> "$LOG"
     echo "latest commit message: '$latestCommitMsg'" >> "$LOG"
@@ -127,18 +126,10 @@ launch() {
     if $isWithUpdateWindow; then
         sleep 1
     fi
-
-    # if [[ $ARCHITECTURE = "Apple M1" ]]; then
-    #     echo "running on $ARCHITECTURE, switching to arm64" >> "$LOG"
-    #     $env /usr/bin/arch -arm64  /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
-    # else
-    #     echo "running on $ARCHITECTURE" >> "$LOG"
-    #     /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
-    # fi
     $env /usr/bin/arch -x86_64 /usr/bin/python3 -c "import numpy" 2>/dev/null
 
     if [ $? -eq 1 ]; then
-        echo "fatal: dependencies compiled for wrong architecture" >> "$ERR"
+        echo "fatal: dependencies compiled for architecture other than x86_64" >> "$ERR"
         exit 1
     fi
 
