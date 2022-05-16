@@ -6,9 +6,11 @@ modulegraph==0.19.2
 numpy==1.22.3
 openpyxl==3.0.9
 pandas==1.4.2
+PyQt6==6.3.0
 PyQt6-Qt6==6.3.0
 PyQt6-sip==13.3.1
 python-dateutil==2.8.2
 python-docx==0.8.11
 pytz==2022.1
 shiboken6==6.3.0
+PyQt6==6.3.0

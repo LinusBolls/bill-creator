@@ -14,8 +14,8 @@ rm "$ZIP" 2>/dev/null
 
 # remove last line which causes errors on install
 sed -i "" -e "$ d" "$TXT"
-# $env /usr/bin/arch -x86_64 /usr/bin/pip3 install -r "$TXT" -t "$FOLDER"
-/usr/bin/pip3 install -r "$TXT" -t "$FOLDER"
+
+$env /usr/bin/arch -x86_64 /usr/bin/pip3 install -r "$TXT" -t "$FOLDER"
 
 # using an absolute path for the second zip arguments creates nested folders _inside_ the zip, 
 # so we are cding to avoid having to use it

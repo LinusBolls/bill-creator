@@ -116,7 +116,7 @@ updateDependencies() {
 
     # else fatal
     else
-        echo "could not find $REQ_PATH nor $REQ_ZIP" >> "$ERR"
+        echo "fatal: could not find $REQ_PATH nor $REQ_ZIP" >> "$ERR"
         exit 1        
     fi
 }
@@ -135,6 +135,13 @@ launch() {
     #     echo "running on $ARCHITECTURE" >> "$LOG"
     #     /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
     # fi
+    $env /usr/bin/arch -x86_64 /usr/bin/python3 -c "import numpy" 2>/dev/null
+
+    if [ $? -eq 1 ]; then
+        echo "fatal: dependencies compiled for wrong architecture" >> "$ERR"
+        exit 1
+    fi
+
     $env /usr/bin/arch -x86_64 /usr/bin/python3 "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
 }
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
