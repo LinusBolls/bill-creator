@@ -59,14 +59,14 @@ killUpdateWindow() {
 updateSrc() {
     echo "checking for source updates" >> "$LOG"
 
-    currentCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['sha'])")
+    currentCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.load(sys.stdin); print(d['sha'])")
 
-    curl "$REPO_LATEST_COMMIT_URL" -o "$CURRENT_COMMIT_JSON"
+    curl "$REPO_LATEST_COMMIT_URL" --output "$CURRENT_COMMIT_JSON"
 
-    latestCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['sha'])")
-    latestCommitMsg=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.loads(sys.stdin); print(d['commit']['message'])")
+    latestCommitHash=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.load(sys.stdin); print(d['sha'])")
+    latestCommitMsg=$(cat "$CURRENT_COMMIT_JSON" | /usr/bin/python3 -c "import sys, json; d = json.load(sys.stdin); print(d['commit']['message'])")
 
-    if [ $currentCommitHash = $latestCommitHash ]; then
+    if [[ $currentCommitHash = $latestCommitHash && $currentCommitHash != "" ]]; then
         echo "source up to date" >> "$LOG"
     else
         echo "source not up to date, updating" >> "$LOG"
