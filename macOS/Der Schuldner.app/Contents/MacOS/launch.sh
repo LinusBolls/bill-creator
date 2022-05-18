@@ -6,7 +6,10 @@ REPO_ZIP_URL="https://github.com/$REPO_OWNER/$REPO_NAME/archive/refs/heads/maste
 REPO_LATEST_COMMIT_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/commits/master"
 
 ARCHITECTURE=$(sysctl -n machdep.cpu.brand_string)
-LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
+LAUNCH_PATH=$(
+    cd "$(dirname "$0")"
+    pwd
+)
 APP_PATH="$LAUNCH_PATH/../.."
 
 CURRENT_COMMIT_JSON="$APP_PATH/Contents/currentCommit.json"
@@ -28,34 +31,34 @@ export DATA_PATH="$HOME/Library/Application Support/Der Schuldner"
 export DOWNLOADS_PATH="$HOME/downloads"
 
 # check if download folder exists and can be written to
-if [ test -d "$DOWNLOADS_PATH" ] && [ test -w "$DOWNLOADS_PATH" ]; then
+if [ -d "$DOWNLOADS_PATH" -a -w "$DOWNLOADS_PATH" ]; then
     export STARTUP_PATH="$DOWNLOADS_PATH"
 else
     export STARTUP_PATH="$HOME"
 fi
 mkdir "$DATA_PATH" 2>/dev/null
 
-echo $HEADER >> "$LOG"
-echo $HEADER >> "$ERR"
-echo "app folder is $APP_PATH" >> "$LOG"
-echo "data folder is $DATA_PATH" >> "$LOG"
-echo "startup folder is $STARTUP_PATH" >> "$LOG"
+echo $HEADER >>"$LOG"
+echo $HEADER >>"$ERR"
+echo "app folder is $APP_PATH" >>"$LOG"
+echo "data folder is $DATA_PATH" >>"$LOG"
+echo "startup folder is $STARTUP_PATH" >>"$LOG"
 
 INFO="/dev/null"
 
-if which python3 > /dev/null 2>&1; then
-  alias PYTHON=$(which python3)
-else if which python2 > /dev/null 2>&1; then
-  alias PYTHON=$(which python2)
-else if which python > /dev/null 2>&1; then
-  alias PYTHON=$(which python)
+if which python3 >/dev/null 2>&1; then
+    alias PYTHON=$(which python3)
+elif which python2 >/dev/null 2>&1; then
+    alias PYTHON=$(which python2)
+elif which python >/dev/null 2>&1; then
+    alias PYTHON=$(which python)
 else
-  echo "fatal: no python executable found" >> "$ERR"
-  exit 1
+    echo "fatal: no python executable found" >>"$ERR"
+    exit 1
 fi
-echo "python executable is $PYTHON" >> "$LOG"
+echo "python executable is $PYTHON" >>"$LOG"
 
-PYTHON -m pip > /dev/null 2>&1
+PYTHON -m pip >/dev/null 2>&1
 
 hasPip=$?
 
@@ -65,7 +68,8 @@ launchUpdateWindow() {
 
     rm "$INFO"
     mkfifo "$INFO"
-    tail -f "$INFO" | PYTHON "$WINDOW_PY" & infoPid=$!
+    tail -f "$INFO" | PYTHON "$WINDOW_PY" &
+    infoPid=$!
 }
 killUpdateWindow() {
 
@@ -73,7 +77,7 @@ killUpdateWindow() {
 }
 updateSrc() {
 
-    echo "checking for source updates" >> "$LOG"
+    echo "checking for source updates" >>"$LOG"
 
     currentCommitHash=$(cat "$CURRENT_COMMIT_JSON" | PYTHON -c "import sys, json; d = json.load(sys.stdin); print(d['sha'])")
 
@@ -83,15 +87,15 @@ updateSrc() {
     latestCommitMsg=$(cat "$CURRENT_COMMIT_JSON" | PYTHON -c "import sys, json; d = json.load(sys.stdin); print(d['commit']['message'])")
 
     if [[ $currentCommitHash = $latestCommitHash && $currentCommitHash != "" ]]; then
-        echo "source up to date" >> "$LOG"
+        echo "source up to date" >>"$LOG"
     else
-        echo "source not up to date, updating" >> "$LOG"
-        
-        echo "Fetching Source..." > "$INFO"
+        echo "source not up to date, updating" >>"$LOG"
+
+        echo "Fetching Source..." >"$INFO"
 
         curl -L "$REPO_ZIP_URL" --output "$DATA_PATH/update.zip"
 
-        echo "Unpacking Source..." > "$INFO"
+        echo "Unpacking Source..." >"$INFO"
 
         unzip "$DATA_PATH/update.zip" -d "$DATA_PATH/update"
 
@@ -103,16 +107,16 @@ updateSrc() {
         rm "$DATA_PATH/update.zip"
         rm -rf "$DATA_PATH/update"
     fi
-    echo "current commit hash is '$currentCommitHash', latest commit hash is '$latestCommitHash'" >> "$LOG"
-    echo "latest commit message: '$latestCommitMsg'" >> "$LOG"
+    echo "current commit hash is '$currentCommitHash', latest commit hash is '$latestCommitHash'" >>"$LOG"
+    echo "latest commit message: '$latestCommitMsg'" >>"$LOG"
 }
 updateDependencies() {
 
     # if requirements dir exists, try updating it
     if test -f "$REQ_ZIP"; then
 
-        echo "unzipping dependencies" >> "$LOG"
-        
+        echo "unzipping dependencies" >>"$LOG"
+
         unzip "$REQ_ZIP" -d "$APP_PATH/Contents"
 
         rm "$REQ_ZIP"
@@ -122,26 +126,27 @@ updateDependencies() {
 
         if $hasPip; then
 
-            echo "checking for dependency updates" >> "$LOG"
+            echo "checking for dependency updates" >>"$LOG"
 
             if PYTHON -m pip -vvv freeze -r "$REQ_TXT" --path "$REQ_PATH" | grep "not installed"; then
-                echo "dependencies not up to date, updating" >> "$LOG"
+                echo "dependencies not up to date, updating" >>"$LOG"
                 PYTHON -m pip install -r "$REQ_TXT" -t "$REQ_PATH"
             else
-                echo "dependencies up to date" >> "$LOG";
+                echo "dependencies up to date" >>"$LOG"
             fi
         else
-            echo "pip command not found, skipping dependency update check" >> "$LOG"
+            echo "pip command not found, skipping dependency update check" >>"$LOG"
+        fi
 
     # else fatal
     else
-        echo "fatal: could not find $REQ_PATH nor $REQ_ZIP" >> "$ERR"
-        exit 1        
+        echo "fatal: could not find $REQ_PATH nor $REQ_ZIP" >>"$ERR"
+        exit 1
     fi
 }
 launch() {
 
-    echo "Launching..." > "$INFO"
+    echo "Launching..." >"$INFO"
 
     if $isWithUpdateWindow; then
         sleep 1
@@ -149,17 +154,17 @@ launch() {
     $env /usr/bin/arch -x86_64 PYTHON -c "import numpy" 2>/dev/null
 
     if [ $? -eq 1 ]; then
-        echo "fatal: dependencies compiled for architecture other than x86_64" >> "$ERR"
+        echo "fatal: dependencies compiled for architecture other than x86_64" >>"$ERR"
         exit 1
     fi
 
-    $env /usr/bin/arch -x86_64 PYTHON "$ENTRY_PY" >> "$LOG" 2>>"$ERR"
+    $env /usr/bin/arch -x86_64 PYTHON "$ENTRY_PY" >>"$LOG" 2>>"$ERR"
 }
-echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
+echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 >/dev/null 2>&1
 
 hasWifi=[ $? -eq 0 ]
 
-start=`date +%s`
+start=$(date +%s)
 
 if $hasWifi; then
 
@@ -168,17 +173,17 @@ if $hasWifi; then
 
         updateSrc
         updateDependencies
-    
+
         killUpdateWindow
     else
         updateSrc
         updateDependencies
     fi
 else
-    echo "no wifi connection, skipping update checks" >> "$LOG"
+    echo "no wifi connection, skipping update checks" >>"$LOG"
 fi
-end=`date +%s`
-startupTime=$((end-start))
+end=$(date +%s)
+startupTime=$((end - start))
 
 echo "launched in $startupTime seconds"
 
