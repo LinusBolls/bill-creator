@@ -146,24 +146,25 @@ updateDependencies() {
 }
 launch() {
 
-    echo "Launching..." >"$INFO"
+    echo "Checking Compatibility..." >"$INFO"
 
-    if $isWithUpdateWindow; then
-        sleep 1
-    fi
     $env /usr/bin/arch -x86_64 PYTHON --version >/dev/null 2>>"$ERR"
-
     if [ $? -eq 1 ]; then
         echo "fatal: python executable incompatible with x86_64" >>"$ERR"
         exit 1
     fi
-    $env /usr/bin/arch -x86_64 PYTHON -c "import numpy" >/dev/null 2>>"$ERR"
 
+    $env /usr/bin/arch -x86_64 PYTHON -c "import numpy" >/dev/null 2>>"$ERR"
     if [ $? -eq 1 ]; then
         echo "fatal: dependencies compiled for architecture other than x86_64" >>"$ERR"
         exit 1
     fi
 
+    echo "Launching..." >"$INFO"
+
+    if $isWithUpdateWindow; then
+        sleep 1
+    fi
     $env /usr/bin/arch -x86_64 PYTHON "$ENTRY_PY" >>"$LOG" 2>>"$ERR"
 }
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 >/dev/null 2>&1
