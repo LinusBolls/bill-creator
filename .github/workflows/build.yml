@@ -2,14 +2,13 @@ name: Build MacOS Installer
 on: [push]
 jobs:
   Build-MacOS-Installer:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
+      - run: uname -m
+      - run: sysctl -n machdep.cpu.brand_string
 
       - name: Build .dmg Installer
-        run: "sh macOS/build.sh"
+        run: sh macOS/build.sh
