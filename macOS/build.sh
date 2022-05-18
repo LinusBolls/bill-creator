@@ -10,11 +10,14 @@ DMG_FILE="$LAUNCH_PATH/Der Schuldner.dmg"
 
 rm "$DMG_FILE" 2>/dev/null
 
+echo "launch_path: $LAUNCH_PATH"
+echo "app_path: $APP_PATH"
+
 toIconSet() {
 
-  FOLDER="$LAUCNH_PATH/appIcon"
+  FOLDER="$APP_PATH/macOS/appIcon"
   SVG_FILE="$APP_PATH/assets/appIcon.svg"
-  PNG_FILE="$LAUNCH_PATH/appIcon.png"
+  PNG_FILE="$APP_PATH/macOS/appIcon.png"
 
   # qlmanage -t -s 1024 -o . "$SVG_FILE"
 

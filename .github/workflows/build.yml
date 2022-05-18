@@ -7,8 +7,10 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - run: uname -m
-      - run: sysctl -n machdep.cpu.brand_string
+      - name: Install Librsvg using Homebrew
+        run: |
+          brew update
+          brew install librsvg
 
       - name: Build .dmg Installer
         run: sh macOS/build.sh
