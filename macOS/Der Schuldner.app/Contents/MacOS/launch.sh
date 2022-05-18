@@ -56,7 +56,7 @@ else
     echo "fatal: no python executable found" >>"$ERR"
     exit 1
 fi
-echo "python executable is $PYTHON" >>"$LOG"
+echo "python executable is $(PYTHON -c 'import sys; print(sys.executable)')" >>"$LOG"
 
 PYTHON -m pip >/dev/null 2>&1
 
@@ -151,7 +151,13 @@ launch() {
     if $isWithUpdateWindow; then
         sleep 1
     fi
-    $env /usr/bin/arch -x86_64 PYTHON -c "import numpy" 2>/dev/null
+    $env /usr/bin/arch -x86_64 PYTHON --version >/dev/null 2>>"$ERR"
+
+    if [ $? -eq 1 ]; then
+        echo "fatal: python executable incompatible with x86_64" >>"$ERR"
+        exit 1
+    fi
+    $env /usr/bin/arch -x86_64 PYTHON -c "import numpy" >/dev/null 2>>"$ERR"
 
     if [ $? -eq 1 ]; then
         echo "fatal: dependencies compiled for architecture other than x86_64" >>"$ERR"

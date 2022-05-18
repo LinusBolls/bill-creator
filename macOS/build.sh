@@ -3,7 +3,10 @@
 # https://stackoverflow.com/questions/96882/how-do-i-create-a-nice-looking-dmg-for-mac-os-x-using-command-line-tools
 # https://github.com/create-dmg/create-dmg
 
-LAUNCH_PATH=$(cd "$(dirname "$0")"; pwd)
+LAUNCH_PATH=$(
+  cd "$(dirname "$0")"
+  pwd
+)
 APP_PATH="$LAUNCH_PATH/.."
 
 DMG_FILE="$LAUNCH_PATH/Der Schuldner.dmg"
@@ -22,7 +25,7 @@ toIconSet() {
   # qlmanage -t -s 1024 -o . "$SVG_FILE"
 
   # brew install librsvg required for rsvg-convert
-  rsvg-convert -h 1024 "$SVG_FILE" > "$PNG_FILE"
+  rsvg-convert -h 1024 "$SVG_FILE" >"$PNG_FILE"
 
   mkdir "$FOLDER"
 
@@ -60,7 +63,6 @@ rm -r "$LAUNCH_PATH/temp/"
 
 sache="$LAUNCH_PATH/pack.temp.dmg"
 
-
 # ab hier wirds sus
 
 # hdiutil create -srcfolder "${source}" -volname "${title}" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size 500m "$sache"
@@ -96,6 +98,5 @@ sache="$LAUNCH_PATH/pack.temp.dmg"
 # hdiutil detach ${device}
 # hdiutil convert "$sache" -format UDZO -imagekey zlib-level=9 -o "dings"
 # rm -f "$sache"
-
 
 # sips -Z 2000 background.png --out resizedBackground.png
