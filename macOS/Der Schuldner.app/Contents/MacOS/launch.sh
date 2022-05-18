@@ -28,7 +28,7 @@ export DATA_PATH="$HOME/Library/Application Support/Der Schuldner"
 export DOWNLOADS_PATH="$HOME/downloads"
 
 # check if download folder exists and can be written to
-if [[ test -d "$DOWNLOADS_PATH" && test -w "$DOWNLOADS_PATH" ]]; then
+if [ test -d "$DOWNLOADS_PATH" ] && [ test -w "$DOWNLOADS_PATH" ]; then
     export STARTUP_PATH="$DOWNLOADS_PATH"
 else
     export STARTUP_PATH="$HOME"
